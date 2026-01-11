@@ -1,0 +1,17 @@
+System parameters
+	nAstroParts	= 50
+	nLeafs		= 0
+	d_IP3		= 0.1
+	d_Ca		= 0.1
+	Rcell		= 2
+	Rcell2		= 1
+	g_Ca		= 0.04
+	V_m			= -70
+	Ca_ext		= 2000
+	A_noise		= 0.05
+	A_noise_leaf= 0.17
+	
+Simulation parameters
+	Time step				 (s)	= 0.01
+	Simulation duration		 (s)	= 1000
+  Seed                  = 1
