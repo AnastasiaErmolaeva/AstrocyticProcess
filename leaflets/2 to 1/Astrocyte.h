@@ -26,6 +26,9 @@ private:	//types
 		connectedAstroParts connAstroParts;
 		connectedLeafs connLeafs;
 
+		Impulse	impulseComp;
+		Impulse	impulseComp2;
+
 		FP	p_old,
 			p;
 		FP	q_old,
@@ -75,6 +78,8 @@ private:	//variables
 
 	FP  d_IP3;
 	FP  d_Ca;
+	FP  Imp_comp = 0;
+	FP  Imp_comp2 = 0;
 
 	FP  Rcell;
 	FP  Rcell2;
@@ -150,6 +155,11 @@ private:	//functions
 	inline FP Jplc(const FP& qold)
 	{
 		return v4 * ((qold + (1. - alf) * k_4) / (qold + k_4));
+	}
+
+	inline FP prod_PLC_b(const FP& G)
+	{
+		return 1.8 * v_b * (pow(G, 0.7) / (pow(G, 0.7) + pow((K_r + K_p * (0.01 / (0.01 + K_n))), 0.7)));
 	}
 
 	inline FP mFun(const FP& pold)
@@ -271,20 +281,6 @@ private:	//functions
 		for (int i = 0; i < N_cycle; ++i)
 		{
 			x += distribution(generator1);
-		}
-		x = (x - 0.5 * FP(N_cycle));
-		x = x / sqrt(FP(N_cycle) / 12.);
-		x = A_noiseIP3 * x;
-		return x;
-	}
-
-	inline FP noiseIP3_2()
-	{
-		FP x = 0.;
-		int N_cycle = 10;
-		for (int i = 0; i < N_cycle; ++i)
-		{
-			x += distribution(generator2);
 		}
 		x = (x - 0.5 * FP(N_cycle));
 		x = x / sqrt(FP(N_cycle) / 12.);

@@ -50,6 +50,21 @@ void Astrocyte::init(const vector<Cell*>& tailNet_in)
 	generator2 = default_random_engine(seed + 2);
 	distribution = uniform_real_distribution<FP>(0., 1.);
 
+	//parameters of Poisson pulses
+	impulseAmplitudeComp = 0.;
+	impulseDurationComp = 0.01;
+	impulseStartTimeComp = 0.;
+	impulseFreqComp = 1.05;				
+	impulsesQuantityComp = -1;			
+	freqTypeIntComp = 0;				
+	ampTypeIntComp = 1;		
+	impMinAmpComp = 0.;
+	impMaxAmpComp = 0.5;
+	bool isInputImpulse = true;
+
+	if (impulsesQuantityComp == (-1))
+		impulsesQuantityComp = INT_MAX;
+	
 	astroParts.resize(nAstroParts);
 	initConnectedAstroParts();
 	initConnectedLeaf();
@@ -71,7 +86,13 @@ void Astrocyte::init(const vector<Cell*>& tailNet_in)
 		astroParts[iPart].n_old = n0;
 		astroParts[iPart].k.resize(4);
 		astroParts[iPart].k_old.resize(4);
+		astroParts[iPart].impulseComp.init(impulseAmplitudeComp, impulseDurationComp, impulseStartTimeComp, impulseFreqComp, impulsesQuantityComp, FrequencyType(freqTypeIntComp), AmplitudeType(ampTypeIntComp), impMinAmpComp, impMaxAmpComp, timeStep, seed + iPart);
 	}
+
+	if (isInputImpulse)
+		impulseComp.init(impulseAmplitudeComp, impulseDurationComp, impulseStartTimeComp, impulseFreqComp, impulsesQuantityComp, FrequencyType(freqTypeIntComp), AmplitudeType(ampTypeIntComp), impMinAmpComp, impMaxAmpComp, timeStep, seed);
+	else
+		impulseComp.init(impulseAmplitudeComp, impulseDurationComp, impulseStartTimeComp, impulseFreqComp, impulsesQuantityComp, FREQ_NEVER, AmplitudeType(ampTypeIntComp), impMinAmpComp, impMaxAmpComp, timeStep, seed);
 }
 
 void Astrocyte::initConnectedAstroParts()
@@ -131,18 +152,24 @@ void Astrocyte::rungeKuttStep(const int& iPart, const int& iStep, const FP& time
 	if ((iPart == 0) || (iPart == 1) || (iPart == 2) || (iPart == 3) || (iPart == 4) || (iPart == 10) || (iPart == 11) || (iPart == 12) || (iPart == 13) || (iPart == 14) || (iPart == 20) || (iPart == 21) || (iPart == 22) || (iPart == 23) || (iPart == 24) || (iPart == 23) || (iPart == 30) || (iPart == 31) || (iPart == 32) || (iPart == 33) || (iPart == 34) || (iPart == 40) || (iPart == 41) || (iPart == 42) || (iPart == 43) || (iPart == 44))
 	{
 		param1[iPart] = 1.;
-		param2[iPart] = 1.;
 	}
 	else
 	{
 		param1[iPart] = 0.;
-		param2[iPart] = 0.;
 	}
+
+	if (iStep == 0)
+		Imp_comp = astroParts[iPart].impulseComp.createImpulse(timeAstro, true);
+	else if ((iStep == 1) || (iStep == 2))
+		Imp_comp = astroParts[iPart].impulseComp.createImpulse(timeAstro + timeStep / 2., false);
+	else
+		Imp_comp = astroParts[iPart].impulseComp.createImpulse(timeAstro + timeStep, false);
+
 
 	calcPin(iPart, iStep);
 	calcQin(iPart, iStep);
 
-	astroParts[iPart].k[0] = (astroParts[iPart].p_in + (p_1 - (astroParts[iPart].p_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[0])) * Tr + Jplc(astroParts[iPart].q_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[1]) + param1[iPart] * noiseIP3() + param2[iPart] * noiseIP3_2()) * timeStep;
+	astroParts[iPart].k[0] = (astroParts[iPart].p_in + (p_1 - (astroParts[iPart].p_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[0])) * Tr + Jplc(astroParts[iPart].q_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[1]) + param1[iPart] * prod_PLC_b(Imp_comp)) * timeStep;
 	astroParts[iPart].k[1] = (astroParts[iPart].q_in + astroParts[iPart].c1 * (Jchannel(astroParts[iPart].p_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[0], astroParts[iPart].q_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[1], astroParts[iPart].z_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[2], astroParts[iPart].c1) - Jpump(astroParts[iPart].q_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[1]) + Jleak(astroParts[iPart].q_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[1], astroParts[iPart].c1)) + Jin(astroParts[iPart].p_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[0]) - Jout(astroParts[iPart].q_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[1]) + Noise(astroParts[iPart].n_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[3], astroParts[iPart].q_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[1]) ) * timeStep;
 	astroParts[iPart].k[2] = ((h_fun(astroParts[iPart].p_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[0], astroParts[iPart].q_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[1]) - (astroParts[iPart].z_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[2])) / Tn(astroParts[iPart].p_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[0], astroParts[iPart].q_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[1])) * timeStep;
 	astroParts[iPart].k[3] = ((minf() - (astroParts[iPart].n_old + astroParts[iPart].rungeKuttCoeffMult[iStep] * astroParts[iPart].k_old[3])) / tauinf() + noise()) * timeStep;
