@@ -22,7 +22,7 @@ git clone https://github.com/AnastasiaErmolaeva/AstrocyticProcess.git
 
 The program is written in the C++ programming language. To run the default experiment execute `main.cpp`.
 Integration is performed using the 4th order Runge-Kutta method, which is optimized for equations containing stochastic noise. The time step is 0.01 seconds. The simulation model time is 50000 seconds. 
-Each point was averaged over 10 realizations. The program run time for default parameters is around 1.5 hours.
+The program run time for default parameters is around 1.5 hours.
 
 ### Results
 
